@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpotiData</title>
+    
+    <style>
+        /* Theme Variables */
+        :root, [data-theme="frozen"] {
+            --bg-base: #D9DADF;
+            --bg-card: #FCF8D8;
+            --text-main: #7C7D75;
+            --text-muted: #ADACA7;
+            --border-col: #ADACA7;
+            --color-brand: #DD700B;
+            --color-brand-alpha: rgba(221, 112, 11, 0.5);
+            --color-secondary: #7C7D75;
+            --color-secondary-alpha: rgba(124, 125, 117, 0.5);
+        }
+
+        [data-theme="light"] {
+            --bg-base: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-main: #111827;
+            --text-muted: #4b5563;
+            --border-col: #d1d5db;
+            --color-brand: #1db954;
+            --color-brand-alpha: rgba(29, 185, 84, 0.5);
+            --color-secondary: #3b82f6;
+            --color-secondary-alpha: rgba(59, 130, 246, 0.5);
+        }
+
+        [data-theme="turquoise"] {
+            --bg-base: #304C64;
+            --bg-card: #26788E;
+            --text-main: #ffffff;
+            --text-muted: #A4CCD4;
+            --border-col: #631B08;
+            --color-brand: #E2480C;
+            --color-brand-alpha: rgba(226, 72, 12, 0.5);
+            --color-secondary: #A4CCD4;
+            --color-secondary-alpha: rgba(164, 204, 212, 0.5);
+        }
+
+        /* Custom Scrollbar for inner containers */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: var(--bg-base); 
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: var(--border-col); 
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--color-brand); 
+        }
+        
+        /* Transition for smooth theme switching */
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .theme-transition {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+    </style>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bgbase: 'var(--bg-base)',
+                        cardbg: 'var(--bg-card)',
+                        textmain: 'var(--text-main)',
+                        textmuted: 'var(--text-muted)',
+                        bordercol: 'var(--border-col)',
+                        brand: 'var(--color-brand)',
+                        secondary: 'var(--color-secondary)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- PapaParse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body class="bg-bgbase text-textmain font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-cardbg border-b border-bordercol p-4 sticky top-0 z-50 shadow-md theme-transition">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <svg class="w-8 h-8 text-brand theme-transition" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                </svg>
+                <h1 class="text-2xl font-bold text-textmain tracking-tight theme-transition">SpotiData by Holmes</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <select id="themeSelector" class="bg-bgbase text-textmain border border-bordercol rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand theme-transition">
+                    <option value="frozen">Frozen Mist</option>
+                    <option value="light" selected>Light Mode</option>
+                    <option value="turquoise">Turquoise Autumn</option>
+                </select>
+                <label for="csvFileInput" class="cursor-pointer bg-brand hover:opacity-80 text-white font-semibold py-2 px-6 rounded-full transition-all inline-block shadow-lg">
+                    Upload Exportify CSV
+                </label>
+                <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-4 md:p-8 max-w-[1600px] mx-auto w-full">
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="flex flex-col items-center justify-center h-[70vh] text-center">
+            <svg class="w-24 h-24 text-textmuted mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <h2 class="text-3xl font-bold text-textmain mb-3">Upload your Playlist Data</h2>
+            <p class="text-textmuted max-w-lg mb-6 text-lg">Export your Spotify playlist using Exportify, then upload the CSV file here to generate a massive interactive dashboard.</p>
+            <a href="https://exportify.net/" target="_blank" class="text-brand hover:underline font-medium">Get your CSV from exportify.net</a>
+        </div>
+
+        <!-- Dashboard (Hidden by default) -->
+        <div id="dashboard" class="hidden space-y-8 animate-fade-in">
+            
+            <!-- Section 1: Top 10 Key Data Points -->
+            <section>
+                <h2 class="text-xl font-bold text-textmain mb-4 border-b border-bordercol pb-2 theme-transition">Key Highlights</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" id="statsGrid">
+                    <!-- Stat Cards generated by JS -->
+                </div>
+            </section>
+
+            <!-- Section 2: Audio Profiles & Musical Theory -->
+            <section>
+                <h2 class="text-xl font-bold text-textmain mb-4 border-b border-bordercol pb-2 theme-transition">Audio Profiles & Musical Theory</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Radar -->
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2 text-center">Average Audio Features</h3>
+                        <div class="aspect-square"><canvas id="radarChart"></canvas></div>
+                    </div>
+                    <!-- Keys Stacked -->
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol flex flex-col theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2 text-center">Key & Mode Distribution</h3>
+                        <div class="flex-grow min-h-[250px]"><canvas id="keyModeBarChart"></canvas></div>
+                    </div>
+                    <!-- Breakdown (Pie/Doughnut) -->
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 theme-transition">
+                        <div>
+                            <h3 class="text-sm font-semibold text-textmuted mb-2 text-center">Mode (Major vs Minor)</h3>
+                            <div class="aspect-square max-h-[200px] mx-auto"><canvas id="modePieChart"></canvas></div>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-textmuted mb-2 text-center">Time Signature</h3>
+                            <div class="aspect-square max-h-[200px] mx-auto"><canvas id="timeSigDoughnutChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Timeline -->
+                <div class="mt-6 bg-cardbg p-4 rounded-xl shadow-md border border-bordercol theme-transition">
+                    <h3 class="text-sm font-semibold text-textmuted mb-2">Track Additions Over Time</h3>
+                    <div class="h-64"><canvas id="timelineChart"></canvas></div>
+                </div>
+            </section>
+
+            <!-- Section 3: Audio Profiles & Vibe Scatters -->
+            <section>
+                <h2 class="text-xl font-bold text-textmain mb-4 border-b border-bordercol pb-2 theme-transition">Vibe Scatters</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol flex flex-col theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2 text-center">Mood Matrix (Danceability vs Valence)</h3>
+                        <div class="h-[500px] w-full"><canvas id="moodScatter"></canvas></div>
+                    </div>
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol flex flex-col theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2 text-center">Energy vs Loudness</h3>
+                        <div class="h-[500px] w-full"><canvas id="energyScatter"></canvas></div>
+                    </div>
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol flex flex-col theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2 text-center">Acousticness vs Instrumentalness</h3>
+                        <div class="h-[500px] w-full"><canvas id="acousticScatter"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Distributions -->
+            <section>
+                <h2 class="text-xl font-bold text-textmain mb-4 border-b border-bordercol pb-2 theme-transition">Distributions</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2">Release Year Distribution</h3>
+                        <div class="h-64"><canvas id="yearDistChart"></canvas></div>
+                    </div>
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2">Popularity Distribution (10s)</h3>
+                        <div class="h-64"><canvas id="popDistChart"></canvas></div>
+                    </div>
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2">Tempo / BPM Distribution</h3>
+                        <div class="h-64"><canvas id="tempoDistChart"></canvas></div>
+                    </div>
+                    <div class="bg-cardbg p-4 rounded-xl shadow-md border border-bordercol theme-transition">
+                        <h3 class="text-sm font-semibold text-textmuted mb-2">Duration Distribution (Minutes)</h3>
+                        <div class="h-64"><canvas id="durationDistChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: Exhaustive Categorical Deep Dives -->
+            <section>
+                <h2 class="text-xl font-bold text-textmain mb-4 border-b border-bordercol pb-2 theme-transition">Categorical Deep Dives</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="categoricalGrid">
+                    <!-- HTML Bars generated by JS -->
+                </div>
+            </section>
+
+            <!-- Section 6: Master Data Table -->
+            <section class="pb-12">
+                <h2 class="text-xl font-bold text-textmain mb-4 border-b border-bordercol pb-2 flex justify-between items-center theme-transition">
+                    <span>Master Data Table</span>
+                    <span class="text-sm font-normal text-textmuted" id="tableRecordCount"></span>
+                </h2>
+                <div class="bg-cardbg rounded-xl shadow-md border border-bordercol overflow-hidden flex flex-col theme-transition">
+                    <div class="overflow-x-auto custom-scroll max-h-[600px]">
+                        <table class="w-full text-left text-sm text-textmain" style="table-layout: fixed;">
+                            <thead class="text-xs uppercase bg-bgbase text-textmuted sticky top-0 z-10 theme-transition" id="tableHead">
+                                <!-- Headers -->
+                            </thead>
+                            <tbody class="divide-y divide-bordercol theme-transition" id="tableBody">
+                                <!-- Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination Controls -->
+                    <div class="p-4 border-t border-bordercol bg-bgbase flex justify-between items-center theme-transition">
+                        <button id="prevBtn" class="px-4 py-2 bg-cardbg border border-bordercol hover:opacity-80 rounded disabled:opacity-50 transition-colors">Previous</button>
+                        <span id="pageIndicator" class="text-textmuted text-sm">Page 1</span>
+                        <button id="nextBtn" class="px-4 py-2 bg-cardbg border border-bordercol hover:opacity-80 rounded disabled:opacity-50 transition-colors">Next</button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        // Global State
+        let rawData = [];
+        let headers = [];
+        let charts = {};
+        
+        // Pagination state
+        let currentPage = 1;
+        const rowsPerPage = 100;
+
+        // Constants
+        const KEYS = ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'];
+        const STOP_WORDS = new Set(['the','a','an','and','or','but','in','on','at','to','for','with','of','is','it','this','that','you','my','me','i','your','from','by','as','are','be','was','were','not','no','all','so','up','out','if','we','do']);
+        const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        // Theme Handling
+        const themeSelector = document.getElementById('themeSelector');
+        
+        function getComputedColors() {
+            const rootStyles = getComputedStyle(document.documentElement);
+            return {
+                brand: rootStyles.getPropertyValue('--color-brand').trim(),
+                brandAlpha: rootStyles.getPropertyValue('--color-brand-alpha').trim(),
+                secondary: rootStyles.getPropertyValue('--color-secondary').trim(),
+                secondaryAlpha: rootStyles.getPropertyValue('--color-secondary-alpha').trim(),
+                border: rootStyles.getPropertyValue('--border-col').trim(),
+                text: rootStyles.getPropertyValue('--text-main').trim(),
+                textMuted: rootStyles.getPropertyValue('--text-muted').trim()
+            };
+        }
+
+        themeSelector.addEventListener('change', (e) => {
+            document.documentElement.setAttribute('data-theme', e.target.value);
+            if (rawData.length > 0) {
+                // Wait slightly for CSS vars to apply, then re-render charts
+                setTimeout(() => {
+                    renderCharts();
+                    renderCategoricalDeepDives();
+                }, 50);
+            }
+        });
+
+        // DOM Elements
+        const fileInput = document.getElementById('csvFileInput');
+        const emptyState = document.getElementById('emptyState');
+        const dashboard = document.getElementById('dashboard');
+
+        // File Upload Listener
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    rawData = results.data.filter(row => row['Track Name'] || row['Track URI']);
+                    if (rawData.length === 0) {
+                        alert("No valid data found in CSV.");
+                        return;
+                    }
+                    headers = results.meta.fields;
+                    
+                    emptyState.classList.add('hidden');
+                    dashboard.classList.remove('hidden');
+                    
+                    processAndRenderDashboard();
+                },
+                error: function(err) {
+                    console.error("Parse Error:", err);
+                    alert("Error parsing CSV file.");
+                }
+            });
+        });
+
+        function processAndRenderDashboard() {
+            renderTopStats();
+            renderCharts();
+            renderCategoricalDeepDives();
+            currentPage = 1;
+            renderTable();
+        }
+
+        // Helpers
+        function getNum(val) {
+            const n = parseFloat(val);
+            return isNaN(n) ? 0 : n;
+        }
+
+        function countFrequencies(arr) {
+            const counts = {};
+            for (const item of arr) {
+                if (item) counts[item] = (counts[item] || 0) + 1;
+            }
+            return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        }
+
+        // ================= SECTION 1: TOP 10 STATS =================
+        function renderTopStats() {
+            let totalPop=0, totalDance=0, totalEnergy=0, totalTempo=0, totalMs=0;
+            let oldestYear = 9999;
+            const artists = [], genres = [], keys = [];
+
+            const durKey = headers.findIndex(h => h && h.toLowerCase().includes('duration'));
+            const durationColumn = durKey !== -1 ? headers[durKey] : headers[headers.findIndex(h => h.match(/release date/i)) + 1];
+
+            rawData.forEach(row => {
+                totalPop += getNum(row['Popularity']);
+                totalDance += getNum(row['Danceability']);
+                totalEnergy += getNum(row['Energy']);
+                totalTempo += getNum(row['Tempo']);
+                totalMs += getNum(row[durationColumn]);
+                
+                if (row['Artist Name(s)']) artists.push(...row['Artist Name(s)'].split(',').map(s=>s.trim()));
+                const genreField = row['Genres'] || row['Artist Genres'] || '';
+                if (genreField) genres.push(...genreField.split(',').map(s=>s.trim()));
+                if (row['Key']) keys.push(row['Key']);
+
+                const release = row['Release Date'] || row['Album Release Date'];
+                if (release) {
+                    const year = parseInt(release.substring(0,4));
+                    if (!isNaN(year) && year < oldestYear) oldestYear = year;
+                }
+            });
+
+            const len = rawData.length;
+            const topArtist = countFrequencies(artists)[0]?.[0] || 'N/A';
+            const topGenre = countFrequencies(genres)[0]?.[0] || 'N/A';
+            const topKeyNum = countFrequencies(keys)[0]?.[0];
+            const topKeyStr = topKeyNum ? (KEYS[parseInt(topKeyNum)] || 'N/A') : 'N/A';
+            
+            const stats = [
+                { label: 'Total Tracks', value: len.toLocaleString() },
+                { label: 'Top Artist', value: topArtist },
+                { label: 'Top Genre', value: topGenre },
+                { label: 'Avg Popularity', value: (totalPop/len).toFixed(1) },
+                { label: 'Avg Danceability', value: (totalDance/len).toFixed(3) },
+                { label: 'Avg Energy', value: (totalEnergy/len).toFixed(3) },
+                { label: 'Avg Tempo (BPM)', value: (totalTempo/len).toFixed(1) },
+                { label: 'Avg Duration', value: ((totalMs/len)/60000).toFixed(2) + ' m' },
+                { label: 'Oldest Track', value: oldestYear === 9999 ? 'N/A' : oldestYear },
+                { label: 'Most Common Key', value: topKeyStr }
+            ];
+
+            const grid = document.getElementById('statsGrid');
+            grid.innerHTML = stats.map(s => `
+                <div class="bg-cardbg border border-bordercol rounded-xl p-4 shadow-sm theme-transition">
+                    <div class="text-textmuted text-xs uppercase tracking-wider mb-1">${s.label}</div>
+                    <div class="text-textmain text-2xl font-bold truncate" title="${s.value}">${s.value}</div>
+                </div>
+            `).join('');
+        }
+
+        // ================= CHARTS MANAGEMENT =================
+        function createOrUpdateChart(id, config) {
+            const ctx = document.getElementById(id);
+            if (charts[id]) charts[id].destroy();
+            charts[id] = new Chart(ctx, config);
+        }
+
+        function renderCharts() {
+            const colors = getComputedColors();
+            
+            // Set Global Defaults based on theme
+            Chart.defaults.color = colors.textMuted;
+            Chart.defaults.borderColor = colors.border;
+            Chart.defaults.font.family = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
+            // Data Aggregation
+            let avgStats = { dance:0, energy:0, speech:0, acoustic:0, instrum:0, live:0, val:0 };
+            const addedAtMap = {};
+            const keyModeMap = Array.from({length: 12}, () => ({ major:0, minor:0 }));
+            const keyCounts = Array(12).fill(0);
+            let majorCount=0, minorCount=0;
+            const timeSigs = {};
+            
+            const moodScatterData = [];
+            const energyScatterData = [];
+            const acousticScatterData = [];
+
+            const yearBins = {};
+            const popBins = {};
+            const tempoBins = {};
+            const durBins = {};
+
+            const len = rawData.length;
+            const durKey = headers.findIndex(h => h && h.toLowerCase().includes('duration'));
+            const durationColumn = durKey !== -1 ? headers[durKey] : headers[headers.findIndex(h => h.match(/release date/i)) + 1];
+
+            rawData.forEach(row => {
+                avgStats.dance += getNum(row['Danceability']);
+                avgStats.energy += getNum(row['Energy']);
+                avgStats.speech += getNum(row['Speechiness']);
+                avgStats.acoustic += getNum(row['Acousticness']);
+                avgStats.instrum += getNum(row['Instrumentalness']);
+                avgStats.live += getNum(row['Liveness']);
+                avgStats.val += getNum(row['Valence']);
+
+                if (row['Added At']) {
+                    const ym = row['Added At'].substring(0, 7); 
+                    addedAtMap[ym] = (addedAtMap[ym] || 0) + 1;
+                }
+
+                const k = parseInt(row['Key']);
+                const m = parseInt(row['Mode']);
+                if (!isNaN(k) && k >= 0 && k <= 11) {
+                    keyCounts[k]++;
+                    if (m === 1) { keyModeMap[k].major++; majorCount++; }
+                    else if (m === 0) { keyModeMap[k].minor++; minorCount++; }
+                }
+
+                const ts = row['Time Signature'] || 'Unknown';
+                timeSigs[ts] = (timeSigs[ts] || 0) + 1;
+
+                const trackName = row['Track Name'] || 'Unknown';
+                moodScatterData.push({ x: getNum(row['Danceability']), y: getNum(row['Valence']), track: trackName });
+                energyScatterData.push({ x: getNum(row['Energy']), y: getNum(row['Loudness']), track: trackName });
+                acousticScatterData.push({ x: getNum(row['Acousticness']), y: getNum(row['Instrumentalness']), track: trackName });
+
+                const release = row['Release Date'] || row['Album Release Date'];
+                if (release) {
+                    const y = release.substring(0,4);
+                    yearBins[y] = (yearBins[y] || 0) + 1;
+                }
+                const popBin = Math.floor(getNum(row['Popularity']) / 10) * 10;
+                popBins[popBin] = (popBins[popBin] || 0) + 1;
+                
+                const tempBin = Math.floor(getNum(row['Tempo']) / 10) * 10;
+                tempoBins[tempBin] = (tempoBins[tempBin] || 0) + 1;
+
+                const durMin = Math.floor(getNum(row[durationColumn]) / 60000);
+                if (!isNaN(durMin)) durBins[durMin] = (durBins[durMin] || 0) + 1;
+            });
+
+            for (let k in avgStats) avgStats[k] /= len;
+
+            // 1. Radar Chart
+            createOrUpdateChart('radarChart', {
+                type: 'radar',
+                data: {
+                    labels: ['Danceability', 'Energy', 'Speechiness', 'Acousticness', 'Instrumentalness', 'Liveness', 'Valence'],
+                    datasets: [{
+                        label: 'Average Value',
+                        data: [avgStats.dance, avgStats.energy, avgStats.speech, avgStats.acoustic, avgStats.instrum, avgStats.live, avgStats.val],
+                        backgroundColor: colors.brandAlpha,
+                        borderColor: colors.brand,
+                        pointBackgroundColor: colors.brand,
+                    }]
+                },
+                options: { scales: { r: { min: 0, max: 1, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+            });
+
+            // 2. Timeline
+            const tlKeys = Object.keys(addedAtMap).sort();
+            createOrUpdateChart('timelineChart', {
+                type: 'line',
+                data: {
+                    labels: tlKeys,
+                    datasets: [{
+                        label: 'Tracks Added',
+                        data: tlKeys.map(k => addedAtMap[k]),
+                        borderColor: colors.brand,
+                        backgroundColor: colors.brandAlpha,
+                        tension: 0.3, fill: true
+                    }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // 3. Key & Mode
+            createOrUpdateChart('keyModeBarChart', {
+                type: 'bar',
+                data: {
+                    labels: KEYS,
+                    datasets: [
+                        { label: 'Major', data: keyModeMap.map(km => km.major), backgroundColor: colors.brand },
+                        { label: 'Minor', data: keyModeMap.map(km => km.minor), backgroundColor: colors.secondary }
+                    ]
+                },
+                options: { maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+            });
+
+            // 4. Mode Pie
+            createOrUpdateChart('modePieChart', {
+                type: 'pie',
+                data: {
+                    labels: ['Major', 'Minor'],
+                    datasets: [{
+                        data: [majorCount, minorCount],
+                        backgroundColor: [colors.brand, colors.secondary],
+                        borderWidth: 0
+                    }]
+                }
+            });
+
+            // 5. Time Sig Doughnut
+            const timeSigColors = [colors.brand, colors.secondary, '#eab308', '#ec4899', '#8b5cf6'];
+            createOrUpdateChart('timeSigDoughnutChart', {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(timeSigs),
+                    datasets: [{
+                        data: Object.values(timeSigs),
+                        backgroundColor: timeSigColors,
+                        borderWidth: 0
+                    }]
+                }
+            });
+
+            // 6. Scatters
+            const scatterOpts = {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw.track}: (${ctx.parsed.x.toFixed(2)}, ${ctx.parsed.y.toFixed(2)})` } }
+                }
+            };
+            createOrUpdateChart('moodScatter', {
+                type: 'scatter',
+                data: { datasets: [{ data: moodScatterData, backgroundColor: colors.brandAlpha }] },
+                options: { ...scatterOpts, scales: { x: { title: { display: true, text: 'Danceability' }}, y: { title: { display: true, text: 'Valence' }} } }
+            });
+            createOrUpdateChart('energyScatter', {
+                type: 'scatter',
+                data: { datasets: [{ data: energyScatterData, backgroundColor: colors.secondaryAlpha }] },
+                options: { ...scatterOpts, scales: { x: { title: { display: true, text: 'Energy' }}, y: { title: { display: true, text: 'Loudness' }} } }
+            });
+            createOrUpdateChart('acousticScatter', {
+                type: 'scatter',
+                data: { datasets: [{ data: acousticScatterData, backgroundColor: colors.brandAlpha }] },
+                options: { ...scatterOpts, scales: { x: { title: { display: true, text: 'Acousticness' }}, y: { title: { display: true, text: 'Instrumentalness' }} } }
+            });
+
+            // 7. Distributions (Bars/Lines)
+            const renderDist = (id, dataObj, color, type = 'bar') => {
+                const keys = Object.keys(dataObj).sort((a,b)=>Number(a)-Number(b));
+                createOrUpdateChart(id, {
+                    type: type,
+                    data: {
+                        labels: keys,
+                        datasets: [{ 
+                            label: 'Count',
+                            data: keys.map(k=>dataObj[k]), 
+                            backgroundColor: type === 'line' ? colors.brandAlpha : color,
+                            borderColor: color,
+                            fill: type === 'line',
+                            tension: type === 'line' ? 0.3 : 0
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            };
+
+            renderDist('yearDistChart', yearBins, colors.brand, 'line');
+            renderDist('popDistChart', popBins, colors.secondary);
+            renderDist('tempoDistChart', tempoBins, colors.textMuted);
+            renderDist('durationDistChart', durBins, colors.brand);
+        }
+
+        // ================= HTML CATEGORICAL BARS =================
+        function generateHTMLBars(title, data, maxCount) {
+            const colors = getComputedColors();
+            const items = data.map(([label, count]) => {
+                const pct = ((count / maxCount) * 100).toFixed(1);
+                return `
+                    <div class="relative flex items-center justify-between p-2 text-sm overflow-hidden border-b border-bordercol hover:opacity-80 transition-opacity">
+                        <div class="absolute left-0 top-0 bottom-0" style="width: ${pct}%; background-color: ${colors.brandAlpha};"></div>
+                        <span class="relative z-10 truncate pr-2 font-medium text-textmain">${label}</span>
+                        <span class="relative z-10 text-xs text-textmuted font-mono">${count}</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="bg-cardbg rounded-xl shadow-md border border-bordercol flex flex-col h-80 theme-transition">
+                    <h3 class="text-sm font-semibold text-textmain p-4 border-b border-bordercol shrink-0 bg-bgbase rounded-t-xl theme-transition">${title}</h3>
+                    <div class="overflow-y-auto custom-scroll flex-grow p-1">
+                        ${items}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCategoricalDeepDives() {
+            let artists=[], albums=[], genres=[], labels=[], words=[], months=[];
+
+            let labelKey = headers.find(h => h && h.match(/label|copyright/i));
+            if (!labelKey) {
+                const genreIdx = headers.findIndex(h => h && h.match(/genre/i));
+                if (genreIdx >= 0 && genreIdx + 1 < headers.length) {
+                    labelKey = headers[genreIdx + 1];
+                }
+            }
+
+            rawData.forEach(row => {
+                if (row['Artist Name(s)']) artists.push(...row['Artist Name(s)'].split(',').map(s=>s.trim()));
+                if (row['Album Name']) albums.push(row['Album Name'].trim());
+                const g = row['Genres'] || row['Artist Genres'] || '';
+                if (g) genres.push(...g.split(',').map(s=>s.trim()));
+                
+                const l = labelKey ? row[labelKey] : null;
+                if (l) labels.push(l.trim());
+                
+                if (row['Track Name']) {
+                    const w = row['Track Name'].toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+                    words.push(...w.filter(x => x && !STOP_WORDS.has(x)));
+                }
+
+                const rDate = row['Release Date'] || row['Album Release Date'];
+                if (rDate && rDate.length >= 7) {
+                    const mStr = rDate.substring(5,7);
+                    const mInt = parseInt(mStr, 10);
+                    if (!isNaN(mInt) && mInt >= 1 && mInt <= 12) {
+                        months.push(MONTHS[mInt-1]);
+                    }
+                }
+            });
+
+            const countMap = (arr) => countFrequencies(arr);
+            const aCounts = countMap(artists);
+            const alCounts = countMap(albums);
+            const gCounts = countMap(genres);
+            const lCounts = countMap(labels).length ? countMap(labels) : [['No Label Data Found', 0]];
+            const wCounts = countMap(words);
+            
+            const mRawCounts = {};
+            months.forEach(m => mRawCounts[m] = (mRawCounts[m] || 0) + 1);
+            const mCounts = MONTHS.map(m => [m, mRawCounts[m]||0]);
+
+            const getHighest = (arr) => arr.length && arr[0][1] > 0 ? arr[0][1] : 1;
+
+            const grid = document.getElementById('categoricalGrid');
+            grid.innerHTML = 
+                generateHTMLBars('All Artists', aCounts, getHighest(aCounts)) +
+                generateHTMLBars('All Albums', alCounts, getHighest(alCounts)) +
+                generateHTMLBars('All Genres', gCounts, getHighest(gCounts)) +
+                generateHTMLBars('Record Labels', lCounts, getHighest(lCounts)) +
+                generateHTMLBars('Track Name Words (NLP)', wCounts, getHighest(wCounts)) +
+                generateHTMLBars('Release Months', mCounts, Math.max(1, ...mCounts.map(x=>x[1])));
+        }
+
+        // ================= MASTER DATA TABLE =================
+        function renderTable() {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            
+            if (thead.innerHTML.trim() === '') {
+                const thHtml = headers.map(h => {
+                    return `<th scope="col" class="px-4 py-3 font-semibold whitespace-nowrap overflow-hidden text-ellipsis w-48">${h}</th>`;
+                }).join('');
+                thead.innerHTML = `<tr>${thHtml}</tr>`;
+            }
+
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = startIdx + rowsPerPage;
+            const pageData = rawData.slice(startIdx, endIdx);
+
+            const trs = pageData.map(row => {
+                const tds = headers.map(h => {
+                    const val = row[h] !== undefined ? String(row[h]).replace(/"/g, '&quot;') : '';
+                    return `<td class="px-4 py-2 border-b border-bordercol w-48"><div class="truncate max-w-[200px]" title="${val}">${val}</div></td>`;
+                }).join('');
+                return `<tr class="hover:opacity-80 transition-opacity">${tds}</tr>`;
+            }).join('');
+
+            tbody.innerHTML = trs;
+
+            document.getElementById('tableRecordCount').textContent = `Showing ${startIdx + 1}-${Math.min(endIdx, rawData.length)} of ${rawData.length}`;
+            document.getElementById('pageIndicator').textContent = `Page ${currentPage} of ${Math.ceil(rawData.length / rowsPerPage)}`;
+            
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = endIdx >= rawData.length;
+        }
+
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (currentPage > 1) { currentPage--; renderTable(); }
+        });
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            if ((currentPage * rowsPerPage) < rawData.length) { currentPage++; renderTable(); }
+        });
+
+    </script>
+</body>
+</html>
