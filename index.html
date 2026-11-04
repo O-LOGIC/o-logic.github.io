@@ -9,8 +9,8 @@
             --primary-bg: #f4f7f6;
             --card-bg: #ffffff;
             --text-main: #333333;
-            --accent: #2eaadc; 
-            --hover-accent: #1b8ebc;
+            --accent-green: #1DB954;
+            --accent-blue: #2eaadc;
         }
 
         body {
@@ -27,7 +27,7 @@
 
         .header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
         }
 
         .header h1 {
@@ -42,11 +42,12 @@
             margin-top: 0.5rem;
         }
 
-        .card-container {
-            display: flex;
-            justify-content: center;
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
             width: 90%;
-            max-width: 400px;
+            max-width: 700px;
         }
 
         .card {
@@ -59,20 +60,27 @@
             color: var(--text-main);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             border: 1px solid #e1e4e8;
-            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-            border-color: var(--accent);
         }
+
+        /* Specific card hover colors */
+        .card.spotify:hover { border-color: var(--accent-green); }
+        .card.wiki:hover { border-color: var(--accent-blue); }
 
         .card h2 {
             font-size: 1.75rem;
             margin: 0 0 1rem 0;
-            color: var(--accent);
         }
+
+        .card.spotify h2 { color: var(--accent-green); }
+        .card.wiki h2 { color: var(--accent-blue); }
 
         .card p {
             font-size: 1rem;
@@ -82,7 +90,7 @@
         }
 
         .footer {
-            margin-top: 3rem;
+            margin-top: 4rem;
             font-size: 0.85rem;
             color: #888;
         }
@@ -95,9 +103,15 @@
         <p>Central Access Portal</p>
     </div>
 
-    <div class="card-container">
-        <!-- Direct link to the wiki folder based on your file structure -->
-        <a href="wiki/index.html" class="card">
+    <div class="grid-container">
+        <!-- SpotiData Link -->
+        <a href="spotidata.html" class="card spotify">
+            <h2>SpotiData</h2>
+            <p>Access your music data and analytics.</p>
+        </a>
+
+        <!-- Wiki Link -->
+        <a href="wiki/index.html" class="card wiki">
             <h2>O-Logic Wiki</h2>
             <p>Access the central knowledge base and documentation.</p>
         </a>
